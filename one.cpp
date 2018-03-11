@@ -18,7 +18,7 @@ bool is_prime(const long number)
 
 void execute_with_parallel(bool parallel = false)
 {
-    const long BIG_NUMBER = 54324324342;
+    const long BIG_NUMBER = 4324324342;
     const int EXECUTE_NUMBER = 4;
 
     for(long i = 0; i < EXECUTE_NUMBER; i++)
