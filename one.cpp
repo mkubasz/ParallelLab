@@ -1,5 +1,4 @@
 #include <iostream>
-#include <chrono>
 #include <cmath>
 
 bool is_prime(const long number)
@@ -12,13 +11,16 @@ bool is_prime(const long number)
         return false;
     auto sq = static_cast<long>(sqrt(number));
     for(long i = 2; i <= sq; i++){
-        return number % i != 0;
+        if(number % i == 0) {
+            return false;
+        }
     }
+    return true;
 }
 
 void execute_with_parallel(bool parallel = false)
 {
-    const long BIG_NUMBER = 54324324342;
+    const long BIG_NUMBER = 99999;
     const int EXECUTE_NUMBER = 4;
 
     for(long i = 0; i < EXECUTE_NUMBER; i++)
@@ -38,10 +40,15 @@ void execute_with_parallel(bool parallel = false)
         auto finish = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double> elapsed = finish - start;
-
+        const int minutes = static_cast<int>(elapsed.count()) / 60;
+        const int seconds = static_cast<int>(elapsed.count()) % 60;
+        const int milliseconds = static_cast<int>(
+                                    (elapsed.count() - static_cast<int>(elapsed.count())) * 100
+                                );
         std::cout << (parallel ? "Parallel: " : "Without parallel: ")
-                  << static_cast<int>(elapsed.count()) / 60 << " minutes "
-                  << elapsed.count() << " seconds"
+                  << minutes << " minutes "
+                  << seconds << " seconds "
+                  << milliseconds << " miliseconds"
                   << std::endl;
     }
 }
