@@ -8,6 +8,7 @@
 #include <functional>
 #include <thread>
 #include <iomanip>
+#include <cmath>
 
 class Progress_bar {
 private:
@@ -25,7 +26,7 @@ public:
               bar_width{line_width - overhead},
               message{std::move(message_)},
               full_bar{std::string(bar_width, symbol) + std::string(bar_width, ' ')} {
-        if (message.size() + 1 >= bar_width || message.find('\n') != message.npos) {
+        if (message.size() + 1 >= bar_width || message.find('\n') != std::string::npos) {
             os << message << '\n';
             message.clear();
         } else {
@@ -73,31 +74,35 @@ private:
         return _a * (x * x) + _b * x + _c;
     }
 
+    double count_x(long i) {
+        return _range_begin + i * _d;
+    }
+
 public:
     Integral(double a, double b, double c, double range_begin, double range_end, double d) {};
 
     Integral() = default;
 
-    Integral &set_func(double a, double b, double c) {
+    Integral& set_func(double a, double b, double c) {
         _a = a;
         _b = b;
         _c = c;
         return *this;
     }
 
-    Integral &set_range(double range_begin, double range_end) {
+    Integral& set_range(double range_begin, double range_end) {
         _range_begin = range_begin;
         _range_end = range_end;
         return *this;
     }
 
-    Integral &set_integral_step(double d) {
+    Integral& set_integral_step(double d) {
         _d = d;
         _n = (_range_end - _range_begin) / _d;
         return *this;
     }
 
-    Integral &set_steps(double n) {
+    Integral& set_steps(double n) {
         _n = n;
         _d = (_range_end - _range_begin) / _n;
         return *this;
@@ -106,12 +111,32 @@ public:
     double count_by_quadratic() {
         double result = 0.0;
         for (long i = 1; i <= _n; i++) {
-            result += f(_range_begin + i * _d) * _d;
+            result += f(count_x(i)) * _d;
         }
         return result;
     }
 
-    double count_by_simpson() { return 1.0; }
+    double count_by_trapezoidal() {
+        double result = 0.0;
+        for (long i = 1; i < _n; i++) {
+            result += f(count_x(i));
+        }
+        result += (f(_range_begin) + f(_range_end)) / 2;
+        result *= _d;
+        return result;
+    }
+
+    double count_by_simpson() { 
+        double temp = 0.0, result = 0.0;
+        for (long i = 1; i <= _n; i++) {
+            temp += f(count_x(i)-(_d/2));
+            if(i < _n) {
+                result += f(count_x(i));
+            }
+        }
+        result = (_d / 6) * (f(_range_begin) + f(_range_end) + 2 * result + 4 * temp);
+        return std::floor(result);
+    }
 };
 
 class Stopwatch {
@@ -168,15 +193,15 @@ public:
         return *this;
     }
 
-    Stopwatch &compare(Stopwatch &stopwatch) {
+    Stopwatch &compare(const std::string &name_a, const std::string &name_b, Stopwatch &stopwatch) {
         if (result().count() > stopwatch.result().count()) {
-            std::cout << "Is slower." << std::endl;
+            std::cout << name_a << " is slower then " << name_b << std::endl;
             print_result(result().count() - stopwatch.result().count());
         } else if (result().count() == stopwatch.result().count()) {
-            std::cout << "Is this same, value is: " << std::endl;
+            std::cout << name_a << " is this same, value as " << name_b << std::endl;
             print_result(result().count());
         } else {
-            std::cout << "Is faster." << std::endl;
+            std::cout << name_a << " is faster then " << name_b << std::endl;
             print_result(stopwatch.result().count() - result().count());
         }
         return *this;
@@ -184,15 +209,22 @@ public:
 };
 
 int main(const int argc, const char *argv[]) {
+    using namespace std::chrono_literals;
+
     Integral integral;
     Stopwatch stopwatchQ;
     Stopwatch stopwatchS;
+    // a*x^2 + b*x + c
     integral.set_func(-1, -1, 10)
             .set_range(-2, 1)
             .set_steps(3);
-
-    stopwatchQ.count_parallel([&] { integral.count_by_quadratic(); }, 9999);
-    stopwatchS.count_parallel([&] { integral.count_by_quadratic(); }, 999999);
-    stopwatchQ.compare(stopwatchS);
+    std::cout << integral.count_by_quadratic() << std::endl;
+    std::cout << integral.count_by_simpson() << std::endl;
+    std::cout << integral.count_by_trapezoidal() << std::endl;
+    std::this_thread::sleep_for(1s);
+    stopwatchQ.count_parallel([&] { integral.count_by_quadratic(); }, 99999);
+    stopwatchS.count_parallel([&] { integral.count_by_simpson(); }, 99999);
+    std::this_thread::sleep_for(1s);
+    stopwatchQ.compare("Quadratic", "Simpson", stopwatchS);
     return EXIT_SUCCESS;
 }
