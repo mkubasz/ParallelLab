@@ -123,6 +123,7 @@ public:
             #pragma omp atomic
             result += f(count_x(i));
         }
+        #pragma omp atomic
         result += (f(_range_begin) + f(_range_end)) / 2;
         result *= _d;
         return result;
@@ -131,11 +132,14 @@ public:
     double count_by_simpson() { 
         double temp = 0.0, result = 0.0;
         for (long i = 1; i <= _n; i++) {
+            #pragma omp atomic
             temp += f(count_x(i)-(_d/2));
             if(i < _n) {
+                #pragma omp atomic
                 result += f(count_x(i));
             }
         }
+        #pragma omp critical
         result = (_d / 6) * (f(_range_begin) + f(_range_end) + 2 * result + 4 * temp);
         return std::floor(result);
     }
