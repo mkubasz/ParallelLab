@@ -70,11 +70,11 @@ private:
     double _range_begin{};
     double _range_end{};
 
-    double f(double x) {
+    inline double f(double x) const {
         return _a * (x * x) + _b * x + _c;
     }
 
-    double count_x(long i) {
+    inline double count_x(long i) const {
         return _range_begin + i * _d;
     }
 
@@ -111,6 +111,7 @@ public:
     double count_by_quadratic() {
         double result = 0.0;
         for (long i = 1; i <= _n; i++) {
+            #pragma omp atomic
             result += f(count_x(i)) * _d;
         }
         return result;
@@ -119,6 +120,7 @@ public:
     double count_by_trapezoidal() {
         double result = 0.0;
         for (long i = 1; i < _n; i++) {
+            #pragma omp atomic
             result += f(count_x(i));
         }
         result += (f(_range_begin) + f(_range_end)) / 2;
@@ -163,7 +165,7 @@ public:
         for (auto j = 0.0; j <= 100; j += 3.65) {
             progress.write(j / 100.0);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            #pragma omp paraller for
+            #pragma omp paraller for default(none) shared(count) private(i) shedule(dynamic)
             for (long i = 0; i < count; i++) {
                 foo();
             }
